@@ -78,8 +78,8 @@ st.markdown("""
 load_dotenv()
 
 # Configuration
-# API_BASE_URL = os.getenv("API_BASE_URL")
-API_BASE_URL = "http://localhost:8001"
+API_BASE_URL = os.getenv("API_BASE_URL")
+# API_BASE_URL = "http://localhost:8001"
 
 if not API_BASE_URL:
     st.error("⚠️ API_BASE_URL is not set in the .env file.")
