@@ -97,7 +97,7 @@ if "api_connected" not in st.session_state:
 # Functions
 
 def get_current_datetime():
-    now = datetime.now(ZoneInfo("Asia/Kolkata"));
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
     return{
         "current_date":now.strftime("%A, %B %d, %Y"),
         "current_time":now.strftime("%I:%M %p")
@@ -114,12 +114,9 @@ def check_api_connection():
 def send_message(message: str, thread_id: str):
     """Send message to the API"""
     try:
-        current_dt = get_current_datetime()
         payload = {
             "message": message,
             "thread_id": thread_id,
-            "current_date" : current_dt['current_date'],
-            "current_time" : current_dt['current_time']
         }
         response = requests.post(
             f"{API_BASE_URL}/chat",
