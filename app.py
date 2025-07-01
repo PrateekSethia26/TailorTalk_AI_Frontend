@@ -6,6 +6,7 @@ import time
 import uuid
 from dotenv import load_dotenv
 import os
+from zoneinfo import ZoneInfo 
 
 # Page configuration
 st.set_page_config(
@@ -77,7 +78,8 @@ st.markdown("""
 load_dotenv()
 
 # Configuration
-API_BASE_URL = os.getenv("API_BASE_URL")
+# API_BASE_URL = os.getenv("API_BASE_URL")
+API_BASE_URL = "http://localhost:8001"
 
 if not API_BASE_URL:
     st.error("⚠️ API_BASE_URL is not set in the .env file.")
@@ -93,6 +95,14 @@ if "api_connected" not in st.session_state:
     st.session_state.api_connected = False
 
 # Functions
+
+def get_current_datetime():
+    now = datetime.now(ZoneInfo("Asia/Kolkata"));
+    return{
+        "current_date":now.strftime("%A, %B %d, %Y"),
+        "current_time":now.strftime("%I:%M %p")
+    }
+
 def check_api_connection():
     """Check if the API is available"""
     try:
@@ -104,9 +114,12 @@ def check_api_connection():
 def send_message(message: str, thread_id: str):
     """Send message to the API"""
     try:
+        current_dt = get_current_datetime()
         payload = {
             "message": message,
-            "thread_id": thread_id
+            "thread_id": thread_id,
+            "current_date" : current_dt['current_date'],
+            "current_time" : current_dt['current_time']
         }
         response = requests.post(
             f"{API_BASE_URL}/chat",
@@ -142,6 +155,8 @@ with st.sidebar:
     
     # API Status
     st.subheader("API Status")
+    
+
     if st.button("Check Connection"):
         st.session_state.api_connected = check_api_connection()
     
@@ -149,10 +164,10 @@ with st.sidebar:
         st.markdown('<div class="status-indicator status-connected">✅ Connected</div>', unsafe_allow_html=True)
         
         # Get API info
-        api_info = get_api_status()
-        if "error" not in api_info:
-            st.info(f"**Current Date:** {api_info.get('current_date', 'N/A')}")
-            st.info(f"**Current Time:** {api_info.get('current_time', 'N/A')}")
+        current_dt = get_current_datetime()
+        if "error" not in current_dt:
+            st.info(f"**Current Date:** {current_dt['current_date']}")
+            st.info(f"**Current Time:** {current_dt['current_time']}")
     else:
         st.markdown('<div class="status-indicator status-disconnected">❌ Disconnected</div>', unsafe_allow_html=True)
         st.error("Make sure the FastAPI server is running on http://localhost:8001")
@@ -215,12 +230,8 @@ with chat_container:
             """, unsafe_allow_html=True)
 
 
-# --- START OF CHANGES ---
-
-# 1. New callback function to handle sending the message and clearing the input.
 def handle_send_click():
     """Handles the logic when the send button is clicked."""
-    # We check if the input is not empty before processing.
     if st.session_state.user_input:
         user_message = st.session_state.user_input
         
@@ -230,7 +241,6 @@ def handle_send_click():
             "content": user_message
         })
         
-        # Show a spinner while the assistant is thinking
         with st.spinner("Calendar Assistant is thinking..."):
             # Send message to API
             response = send_message(user_message, st.session_state.thread_id)
@@ -248,19 +258,15 @@ def handle_send_click():
                 "content": response["response"]
             })
         
-        # 2. This is the key change: Clearing the input by setting its session state value.
-        # This is allowed within a callback function like this one.
         st.session_state.user_input = ""
 
 
 # Chat input and send button
 if st.session_state.api_connected:
-    # Use columns for better layout
     col1, col2 = st.columns([4, 1])
     
     with col1:
-        # 3. We use `on_change` to trigger the callback when the user presses Enter.
-        #    The `key` parameter is used to link the widget to its session state value.
+
         st.text_input(
             "Type your message:",
             key="user_input",
@@ -270,11 +276,7 @@ if st.session_state.api_connected:
         )
     
     with col2:
-        # 4. We use `on_click` to trigger the callback when the user clicks the Send button.
         st.button("Send", type="primary", use_container_width=True, on_click=handle_send_click)
-
-    # 5. The old message sending logic is removed because it's now handled by the callback.
-    #    The block 'if (send_button or user_input) and user_input.strip():' is gone.
 
 else:
     st.text_input(
@@ -284,7 +286,6 @@ else:
         label_visibility="collapsed"
     )
 
-# --- END OF CHANGES ---
 
 
 # Quick action buttons
@@ -302,7 +303,6 @@ if st.session_state.api_connected:
     for i, action in enumerate(quick_actions):
         with [col1, col2, col3, col4][i]:
             if st.button(action, key=f"quick_action_{i}"):
-                # Add message and get response
                 st.session_state.messages.append({
                     "role": "user",
                     "content": action
